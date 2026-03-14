@@ -1,0 +1,5 @@
+groq
+tavily-python
+reportlab
+python-dotenv
+python-docx
