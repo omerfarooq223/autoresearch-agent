@@ -103,7 +103,7 @@ The agent produces a fully formatted report with:
 - Full Citations
 - Summary Table of Sources (with credibility and evidence)
 
-## 🖼️ Example Output
+## 🖼️ UI Visual
 
 
 ![App UI Screenshot](sample-images/ui-screenshot.png)
