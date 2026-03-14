@@ -37,7 +37,7 @@ TAVILY_API_KEY=your_tavily_key
 
 ### 4. Run the agent (Basic)
 ```bash
-python agent.py research "Impact of AI on healthcare in 2025"
+python skills/agent.py research "Impact of AI on healthcare"
 ```
 
 ### 5. Output Formats
