@@ -43,22 +43,22 @@ python skills/agent.py research "Impact of AI on healthcare"
 ### 5. Output Formats
 Generate PDF, Word, HTML, or Markdown:
 ```bash
-python agent.py research "AI in medicine" --format pdf
-python agent.py research "AI in medicine" --format word
-python agent.py research "AI in medicine" --format html
-python agent.py research "AI in medicine" --format md
+python skills/agent.py research "AI in medicine" --format pdf
+python skills/agent.py research "AI in medicine" --format word
+python skills/agent.py research "AI in medicine" --format html
+python skills/agent.py research "AI in medicine" --format md
 ```
 
 ### 6. Custom Branding
 Add your logo to the report:
 ```bash
-python agent.py research "AI in medicine" --logo path/to/logo.png
+python skills/agent.py research "AI in medicine" --logo path/to/logo.png
 ```
 
 ### 7. Control Number of Sources
 Set sources per sub-question (default 4):
 ```bash
-python agent.py research "AI in medicine" --max-sources 6
+python skills/agent.py research "AI in medicine" --max-sources 6
 ```
 
 ## 🔑 API Keys (Both Free)
