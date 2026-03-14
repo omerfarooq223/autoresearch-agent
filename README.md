@@ -14,6 +14,11 @@ An autonomous AI research agent that takes any topic, searches the live web, rea
 - 💾 Caching for faster repeated queries
 - 🔧 Modular, extensible, and plugin-ready
 
+
+## 🌐 Live Demo
+👉 [Try it here](https://autoresearch-agent.streamlit.app) — no installation needed
+
+
 ## 🚀 Quick Start
 
 ### 1. Clone the repo
