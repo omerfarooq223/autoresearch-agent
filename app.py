@@ -3,9 +3,26 @@ import tempfile
 import os
 import io
 import contextlib
-from skills.agent import run_agent, run_competitor_agent
 
 st.set_page_config(page_title="AutoResearch Agent", layout="centered")
+
+# Sidebar — must come before keys check
+with st.sidebar:
+    st.markdown("### 🔑 API Keys")
+    st.markdown("Both are free to get:")
+    groq_key = st.text_input("Groq API Key", type="password", placeholder="gsk_...")
+    tavily_key = st.text_input("Tavily API Key", type="password", placeholder="tvly-...")
+    st.markdown("[Get Groq key](https://console.groq.com) | [Get Tavily key](https://app.tavily.com)")
+
+# Keys check
+if not groq_key or not tavily_key:
+    st.info("👈 Enter your API keys in the sidebar to get started.")
+    st.stop()
+
+os.environ["GROQ_API_KEY"] = groq_key
+os.environ["TAVILY_API_KEY"] = tavily_key
+
+from skills.agent import run_agent, run_competitor_agent
 
 # --- Custom CSS for header and footer ---
 st.markdown(
@@ -44,6 +61,7 @@ st.markdown(
 )
 
 tabs = st.tabs(["Research", "Competitor Analysis"])
+
 
 # --- Research Tab ---
 with tabs[0]:
