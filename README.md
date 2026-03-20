@@ -8,7 +8,7 @@ An autonomous AI research agent that takes any topic, searches the live web, rea
 - 📊 Synthesizes findings from 12+ sources
 - 📄 Generates professional branded PDF, Word, HTML, or Markdown reports
 - 🏷️ Custom branding/logo support
-- 🏆 Source credibility scoring and evidence snippets
+- 🏆 Multi-factor source credibility scoring (domain authority, trusted whitelist, content quality)
 - 🗂️ Summary table of all sources with metadata
 - ⚡ Ultra-fast LLM (LLaMA 3.3 70B via Groq)
 - 💾 Caching for faster repeated queries
@@ -121,6 +121,6 @@ Here is an example of a generated PDF report (cover page and summary table):
 ## 🆘 Troubleshooting & FAQ
 - **API Key Error:** Ensure `.env` contains valid `GROQ_API_KEY` and `TAVILY_API_KEY`.
 - **No Results:** Try a broader topic or increase `--max-sources`.
-- **Slow Performance:** Cached results are used automatically for repeated queries.
+- **Slow Performance:** Cached results are used automatically for repeated queries. Sub-questions are also searched in parallel for ~4x faster results.
 - **Custom Logo Not Showing:** Check the image path and format (PNG/JPG recommended).
 - **Other Issues:** Delete `.cache/` to clear cache or reinstall dependencies.

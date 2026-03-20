@@ -6,7 +6,7 @@ This skill provides autonomous research and competitive analysis capabilities us
 ## Features
 - Research mode: Generates a detailed research report on any topic, including sub-question breakdown, web search, synthesis, and PDF/Word/HTML/Markdown output.
 - Competitor mode: Produces a competitive analysis report for a comma-separated list of companies.
-- Source credibility scoring and evidence snippets.
+- Source credibility scoring (TLD tier + trusted domain whitelist + content quality signals) and evidence snippets.
 - Custom branding/logo support.
 - Caching for repeated queries.
 - Modular and extensible for plugins.
