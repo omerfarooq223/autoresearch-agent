@@ -14,6 +14,8 @@ import sys
 import hashlib
 import json
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 from tavily import TavilyClient
 from groq import Groq
@@ -84,16 +86,44 @@ Return ONLY a numbered list of 5 questions, nothing else."""
     return questions
 
 
+TRUSTED_DOMAINS = {
+    "scholar.google.com", "pubmed.ncbi.nlm.nih.gov", "arxiv.org",
+    "researchgate.net", "semanticscholar.org", "jstor.org",
+    "reuters.com", "apnews.com", "bbc.com", "nature.com",
+    "scientificamerican.com", "theatlantic.com", "nytimes.com",
+    "theguardian.com", "wsj.com", "ft.com",
+    "techcrunch.com", "wired.com", "mit.edu", "stanford.edu",
+}
+
 def estimate_credibility(source):
-    # Simple heuristic: .gov/.edu > .org > .com > others
     url = source.get('url', '').lower()
-    if ".gov" in url or ".edu" in url:
-        return 5
-    if ".org" in url:
-        return 4
-    if ".com" in url:
-        return 3
-    return 2
+    content = source.get('content', '')
+    title = source.get('title', '')
+    score = 0
+
+    if any(tld in url for tld in [".gov", ".edu", ".mil"]):
+        score += 3
+    elif ".org" in url:
+        score += 2
+    elif ".com" in url or ".net" in url:
+        score += 1
+
+    try:
+        from urllib.parse import urlparse
+        domain = urlparse(url).netloc.replace("www.", "")
+        if domain in TRUSTED_DOMAINS:
+            score += 2
+    except Exception:
+        pass
+
+    if len(content) > 500:
+        score += 1
+    if any(c.isdigit() for c in content[:300]):
+        score += 1
+    if title and len(title) > 20:
+        score += 1
+
+    return min(score, 5)
 
 def extract_evidence_snippet(content):
     # Return the first 200 chars as a snippet (could be improved)
@@ -646,17 +676,27 @@ def save_markdown(topic, report_text, all_sources, logo_path=None):
 # --- Modularized main research workflow ---
 def collect_sources_for_topic(topic, plugin_hooks=None):
     questions = generate_sub_questions(topic)
-    all_sources = []
-    # Allow user to set number of sources per query via env var or default
     try:
         max_sources = int(os.getenv("MAX_SOURCES_PER_QUERY", "4"))
     except Exception:
         max_sources = 4
-    for q in questions:
+
+    all_sources = []
+
+    def fetch(q):
         sources = search_web(q, max_results=max_sources)
         if plugin_hooks and 'on_sources_fetched' in plugin_hooks:
             sources = plugin_hooks['on_sources_fetched'](q, sources)
-        all_sources.extend(sources)
+        return sources
+
+    with ThreadPoolExecutor(max_workers=len(questions)) as executor:
+        futures = {executor.submit(fetch, q): q for q in questions}
+        for future in as_completed(futures):
+            try:
+                all_sources.extend(future.result())
+            except Exception as e:
+                print(f"[WARNING] Search failed for '{futures[future]}': {e}")
+
     return all_sources
 
 def generate_report_for_topic(topic, all_sources, plugin_hooks=None):
@@ -905,9 +945,6 @@ def save_competitor_pdf(topic, report_text, companies, all_sources):
     return filename
 
 
-# Update main block
-
-# Override the __main__ block
 import sys as _sys
 import argparse as _argparse
 
