@@ -19,6 +19,25 @@ An autonomous AI research agent that takes any topic, searches the live web, rea
 👉 [Try it here](https://autoresearch-agent.streamlit.app) — no installation needed
 
 
+# 📁 Project Structure
+
+```
+autoresearch-agent/
+├── app.py                  # Streamlit web UI
+├── requirements.txt        # Python dependencies
+├── README.md               # Project documentation
+├── .env                    # API keys (not committed)
+├── ai-in-the-field-of-medicine-report.pdf  # Example output
+├── sample-images/          # Screenshots for README
+│   ├── ui-screenshot.png
+│   └── pdf-screenshot.png
+├── skills/                 # Main agent logic and skill docs
+│   ├── agent.py
+│   └── SKILL.md
+└── .cache/                 # Search result cache (auto-generated)
+```
+
+
 ## 🚀 Quick Start
 
 ### 1. Clone the repo
