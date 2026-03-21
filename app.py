@@ -104,6 +104,14 @@ with tabs[0]:
             except Exception as e:
                 st.error(f"Error: {e}")
         st.code(stdout_buffer.getvalue(), language="text")
+
+        # Show critique summary in UI
+        stdout_text = stdout_buffer.getvalue()
+        if "Low Confidence Claims" in stdout_text or "unsupported claims" in stdout_text.lower():
+            st.warning("⚠️ Some claims could not be fully verified. See 'Low Confidence Claims' section in your report.")
+        else:
+            st.success("✅ All claims verified against sources.")
+    
         if output_file:
             with open(output_file, "rb") as f:
                 st.download_button(

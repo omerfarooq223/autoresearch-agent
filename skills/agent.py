@@ -173,8 +173,8 @@ def search_web(query, max_results=4, cache_dir=".cache"):
 def synthesize_findings(topic, all_sources):
     print(f"\n✍️  Synthesizing {len(all_sources)} sources into report...")
     sources_text = ""
-    for i, s in enumerate(all_sources, 1):
-        sources_text += f"\nSource {i}: {s['title']}\nURL: {s['url']}\nContent: {s['content']}\n"
+    for i, s in enumerate(all_sources[:12], 1):
+        sources_text += f"\nSource {i}: {s['title']}\nURL: {s['url']}\nContent: {s['content'][:400]}\n"
 
     prompt = f"""You are a senior research analyst at a top consulting firm. 
 Write a thorough, professional research report on: "{topic}"
@@ -241,6 +241,80 @@ Write the complete detailed report now. Be thorough, specific, and analytical:""
 
     return ask_groq(prompt, system="You are a senior research analyst who writes detailed, evidence-based, professional reports for executives and academics.")
 
+def critique_report(report, all_sources):
+    print("\n🔍 Running self-critique loop...")
+    sources_text = "\n".join([
+        f"- {s['title']}: {s['content'][:200]}" for s in all_sources[:10]
+    ])
+    report_truncated = report[:3000]
+    prompt = f"""You are a strict fact-checker. Read this research report and the sources it was based on.
+
+For each key factual claim in the report, evaluate whether it is supported by the provided sources.
+
+REPORT:
+{report_truncated}
+
+SOURCES:
+{sources_text}
+
+Return ONLY a JSON list like this:
+[
+  {{"claim": "exact claim from report", "status": "supported", "reason": "Source X confirms this"}},
+  {{"claim": "exact claim from report", "status": "partial", "reason": "Only weakly implied by sources"}},
+  {{"claim": "exact claim from report", "status": "unsupported", "reason": "No source mentions this"}}
+]
+
+Rules:
+- status must be exactly: supported, partial, or unsupported
+- only include partial and unsupported claims (skip supported ones)
+- if all claims are supported return []
+- Return ONLY the JSON, no explanation, no markdown"""
+
+    result = ask_groq(prompt)
+    try:
+        clean = result.strip().replace("```json", "").replace("```", "").strip()
+        return json.loads(clean)
+    except Exception:
+        return []
+
+
+def fill_gaps(unsupported_claims):
+    print(f"⚠️  Found {len(unsupported_claims)} unsupported claims, re-searching...")
+    gap_sources = []
+    with ThreadPoolExecutor(max_workers=len(unsupported_claims)) as executor:
+        futures = {executor.submit(search_web, claim, 3): claim
+                   for claim in unsupported_claims}
+        for future in as_completed(futures):
+            try:
+                gap_sources.extend(future.result())
+            except Exception as e:
+                print(f"[WARNING] Gap search failed: {e}")
+    return gap_sources
+
+
+def patch_report(original_report, gap_sources, unsupported_claims):
+    claims_text = "\n".join(f"- {c}" for c in unsupported_claims)
+    sources_text = "\n".join([
+        f"Source: {s['title']}\nURL: {s['url']}\nContent: {s['content'][:300]}"
+        for s in gap_sources[:6]
+    ])
+    original_truncated = original_report[:4000]
+    prompt = f"""You are a research editor. These claims in the report lacked source support:
+
+{claims_text}
+
+New sources found specifically for these claims:
+{sources_text}
+
+Original report:
+{original_truncated}
+
+Revise ONLY the unsupported claims using the new sources. Keep everything else identical. Return the complete revised report."""
+
+    return ask_groq(prompt)
+
+
+
 class ProfessionalDoc(BaseDocTemplate):
     def __init__(self, filename, topic, num_sources, **kwargs):
         super().__init__(filename, **kwargs)
@@ -292,6 +366,68 @@ class ProfessionalDoc(BaseDocTemplate):
         c.drawRightString(w - 0.3*inch, 0.22*inch,
                           f"Sources: {self.num_sources}  |  Page {doc.page}")
         c.restoreState()
+
+def critique_report(report, all_sources):
+    print("\n🔍 Running self-critique loop...")
+    sources_text = "\n".join([
+        f"- {s['title']}: {s['content'][:300]}" for s in all_sources
+    ])
+    prompt = f"""You are a strict fact-checker. Read this research report and the sources it was based on.
+
+Identify claims in the report that are NOT clearly supported by the provided sources.
+
+REPORT:
+{report}
+
+SOURCES:
+{sources_text}
+
+Return ONLY a JSON list of unsupported claims, like:
+["claim 1", "claim 2"]
+If all claims are supported, return an empty list: []
+Return ONLY the JSON, nothing else. No explanation, no markdown."""
+
+    result = ask_groq(prompt)
+    try:
+        clean = result.strip().replace("```json", "").replace("```", "").strip()
+        return json.loads(clean)
+    except Exception:
+        return []
+
+
+def fill_gaps(unsupported_claims):
+    print(f"⚠️  Found {len(unsupported_claims)} unsupported claims, re-searching...")
+    gap_sources = []
+    with ThreadPoolExecutor(max_workers=len(unsupported_claims)) as executor:
+        futures = {executor.submit(search_web, claim, 3): claim 
+                   for claim in unsupported_claims}
+        for future in as_completed(futures):
+            try:
+                gap_sources.extend(future.result())
+            except Exception as e:
+                print(f"[WARNING] Gap search failed: {e}")
+    return gap_sources
+
+
+def patch_report(original_report, gap_sources, unsupported_claims):
+    claims_text = "\n".join(f"- {c}" for c in unsupported_claims)
+    sources_text = "\n".join([
+        f"Source: {s['title']}\nURL: {s['url']}\nContent: {s['content']}"
+        for s in gap_sources
+    ])
+    prompt = f"""You are a research editor. These claims in the report lacked source support:
+
+{claims_text}
+
+New sources found specifically for these claims:
+{sources_text}
+
+Original report:
+{original_report}
+
+Revise ONLY the unsupported claims using the new sources. Keep everything else identical. Return the complete revised report."""
+
+    return ask_groq(prompt)
 
 def build_cover_page(topic, num_sources, styles):
     story = []
@@ -430,7 +566,7 @@ def save_pdf(topic, report_text, all_sources, logo_path=None):
             Paragraph('Evidence Snippet', header_style),
             Paragraph('URL', header_style),
         ]]
-        for i, s in enumerate(all_sources, 1):
+        for i, s in enumerate(all_sources[:12], 1):
             table_data.append([
                 Paragraph(str(i), cell_style),
                 Paragraph(s.get('title', '')[:40], cell_style),
@@ -456,30 +592,32 @@ def save_pdf(topic, report_text, all_sources, logo_path=None):
         story.append(t)
         story.append(Spacer(1, 0.2*inch))
 
+    # Strip LLM-generated citations/references section to avoid duplication
+    cut_markers = ["## sources", "## citations", "## references", "## works cited"]
+    report_lines = report_text.split("\n")
+    filtered_lines = []
+    cutting = False
+    for line in report_lines:
+        if any(line.strip().lower().startswith(m) for m in cut_markers):
+            cutting = True
+        if not cutting:
+            filtered_lines.append(line)
+    report_text = "\n".join(filtered_lines)
+
     # Report content
-    for line in report_text.split('\n'):
+    for line in report_text.split("\n"):
         line = line.strip()
         if not line:
             story.append(Spacer(1, 4))
-        elif line.startswith('## '):
+        elif line.startswith("## "):
             story.append(Spacer(1, 6))
             story.append(Paragraph(f"   {line[3:].upper()}", h2_style))
-        elif line.startswith('### '):
+        elif line.startswith("### "):
             story.append(Paragraph(line[4:], h3_style))
-        elif line.startswith('- ') or line.startswith('* '):
+        elif line.startswith("- ") or line.startswith("* "):
             story.append(Paragraph(f"▸   {line[2:]}", bullet_style))
         else:
             story.append(Paragraph(line, body_style))
-
-    # Sources
-    story.append(Spacer(1, 0.2*inch))
-    story.append(HRFlowable(width="100%", thickness=1.5,
-                            color=ACCENT_BLUE, spaceAfter=8))
-    story.append(Paragraph("   SOURCES & CITATIONS", h2_style))
-    story.append(Spacer(1, 8))
-    for i, s in enumerate(all_sources, 1):
-        story.append(Paragraph(f"[{i}]  {s['title']}", citation_style))
-        story.append(Paragraph(s['url'], url_style))
 
     # Back cover note
     story.append(Spacer(1, 0.3*inch))
@@ -717,6 +855,41 @@ def run_agent(topic, output_format="pdf", logo_path=None, plugin_hooks=None):
     all_sources = collect_sources_for_topic(topic, plugin_hooks=plugin_hooks)
     print(f"\n📚 Total sources collected: {len(all_sources)}")
     report = generate_report_for_topic(topic, all_sources, plugin_hooks=plugin_hooks)
+
+    critique_results = critique_report(report, all_sources)
+    # Guard: if LLM returned flat strings instead of dicts, convert them
+    normalized = []
+    for r in critique_results:
+        if isinstance(r, dict):
+            normalized.append(r)
+        elif isinstance(r, str):
+            normalized.append({"claim": r, "status": "unsupported", "reason": "Flagged by fact-checker"})
+    critique_results = normalized
+    unsupported_claims = [r["claim"] for r in critique_results if r.get("status") == "unsupported"][:3]
+    low_confidence = [r for r in critique_results if r.get("status") in ["unsupported", "partial"]]
+
+    if unsupported_claims:
+        gap_sources = fill_gaps(unsupported_claims)
+        all_sources.extend(gap_sources)
+        report = patch_report(report, gap_sources, unsupported_claims)
+        print("✅ Report patched with verified sources")
+    else:
+        print("✅ All claims supported by sources")
+
+    if low_confidence:
+        disclaimer = "\n\n## ⚠️ Low Confidence Claims\n"
+        for item in low_confidence:
+            disclaimer += f"\n- **{item['claim'][:120]}** — {item['reason']}"
+        report += disclaimer
+
+    unsupported = critique_report(report, all_sources)
+    if unsupported:
+        gap_sources = fill_gaps(unsupported)
+        all_sources.extend(gap_sources)
+        report = patch_report(report, gap_sources, unsupported)
+        print("✅ Report patched with verified sources")
+    else:
+        print("✅ All claims supported by sources")
 
     if output_format == "pdf":
         pdf_file = save_pdf(topic, report, all_sources, logo_path=logo_path)
