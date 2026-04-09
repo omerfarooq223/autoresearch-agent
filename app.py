@@ -471,6 +471,95 @@ st.markdown(
         color: #4b5563 !important;
         line-height: 1.6;
     }
+
+    /* Dark-mode-only fixes to preserve original light design */
+    @media (prefers-color-scheme: dark) {
+        html, body, [data-testid="stAppViewContainer"] {
+            background: #0b1220 !important;
+            color: #e5e7eb !important;
+        }
+
+        [data-testid="sidebar"] {
+            background: #111827 !important;
+            border-right: 1px solid #334155 !important;
+        }
+
+        .sidebar-header {
+            background: #0b1326 !important;
+            border-color: #334155 !important;
+        }
+
+        .stTabs [data-baseweb="tab-list"] {
+            border-bottom: 1px solid #334155 !important;
+        }
+
+        .stTabs [data-baseweb="tab-list"] button {
+            color: #94a3b8 !important;
+        }
+
+        .stTabs [data-baseweb="tab-list"] button:hover,
+        .stTabs button[aria-selected="true"] {
+            color: #60a5fa !important;
+        }
+
+        .stTabs [data-baseweb="tab-list"] button::after {
+            background: #60a5fa !important;
+        }
+
+        .stTextInput > div > div > input,
+        .stSelectbox > div > div > div,
+        .stFileUploader > div > div > div {
+            background: #111827 !important;
+            border-color: #334155 !important;
+            color: #e5e7eb !important;
+        }
+
+        .stSelectbox div[data-baseweb="select"] span,
+        .stSelectbox div[data-baseweb="select"] input,
+        .stSelectbox div[data-baseweb="select"] div,
+        .stTextInput > div > div > input,
+        .stTextInput > div > div > input::placeholder {
+            color: #cbd5e1 !important;
+        }
+
+        .stTextInput > div > div > input::placeholder {
+            opacity: 1 !important;
+        }
+
+        .stTextInput > div > div > input:focus,
+        .stSelectbox > div > div > div:focus,
+        .stSelectbox > div > div > div:hover {
+            border-color: #60a5fa !important;
+            background: #111827 !important;
+        }
+
+        .streamlit-expanderHeader {
+            color: #e5e7eb !important;
+            border: 1px solid #334155 !important;
+        }
+
+        hr {
+            background: #334155 !important;
+        }
+
+        .stSubheader {
+            color: #e5e7eb !important;
+        }
+
+        .stMarkdown,
+        .footer,
+        .footer-subtext {
+            color: #94a3b8 !important;
+        }
+
+        .footer {
+            border-top: 1px solid #334155 !important;
+        }
+
+        .footer-highlight {
+            color: #60a5fa !important;
+        }
+    }
     
     /* ============ RESPONSIVE DESIGN ============ */
     @media (max-width: 768px) {
