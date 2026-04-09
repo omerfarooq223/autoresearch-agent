@@ -4,6 +4,8 @@ An autonomous AI research agent that takes any topic, breaks it into targeted su
 
 > Built with LLaMA 3.3 70B (Groq) + Tavily Search API
 
+![AutoResearch Agent UI](sample-images/ui-screenshot.png)
+
 ---
 
 ## Why not just use Perplexity or ChatGPT?
