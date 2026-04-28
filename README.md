@@ -205,3 +205,4 @@ Sources are scored 1–5 across three signals:
 **M. Umer Farooq**  
 BS Artificial Intelligence — UMT Lahore  
 GitHub: [omerfarooq223](https://github.com/omerfarooq223)
+Author: Muhammad Umar Farooq
